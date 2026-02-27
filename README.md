@@ -191,13 +191,27 @@ upload to validate.
 The publishToRepositorySystem step should download the artifacts back to
 this directory and fail the step if the contents differ.
 
-## UNIT TESTS
+## Unit tests
 
-### Requirements:
- - gradle
+Requirements:
 
-### How to run test:
+- gradle
+
+### How to run test
+
 From the main directory, run:
 
 ```bash
 gradle test
+```
+
+### Proxy configuration
+
+If you are using proxy settings, enter them in ~/.gradle/gradle.properties
+
+```bash
+systemProp.http.proxyHost=proxy.example.com
+systemProp.http.proxyPort=8080
+systemProp.https.proxyHost=proxy.example.com
+systemProp.https.proxyPort=8080
+```

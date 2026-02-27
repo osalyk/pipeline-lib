@@ -65,7 +65,7 @@ class UnitTest {
 		binding.setVariable("sanitizedStageName", { -> "el9-gcc" })
 		binding.setVariable("checkJunitFiles", { Map m -> "SUCCESS" })
 
-		// pozwala nadpisać mocki w konkretnym teście
+		// allows you to overwrite mocks in a specific test
 		extraConfig.each { k, v ->
 			binding.setVariable(k, v)
 		}
