@@ -22,15 +22,15 @@ dependencies {
 
 spotless {
     groovy {
-        target "src/test/groovy/*.groovy"
+        target 'src/test/**/*.groovy'
         importOrder()
         endWithNewline()
-        greclipse().configFile(rootProject.file("greclipse.properties"))
+        greclipse().configFile(rootProject.file('greclipse.properties'))
     }
     groovyGradle {
-        target "*.gradle"
+        target '*.gradle'
         endWithNewline()
-        greclipse().configFile(rootProject.file("greclipse.properties"))
+        greclipse().configFile(rootProject.file('greclipse.properties'))
     }
 }
 

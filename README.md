@@ -215,3 +215,11 @@ systemProp.http.proxyPort=8080
 systemProp.https.proxyHost=proxy.example.com
 systemProp.https.proxyPort=8080
 ```
+
+## Formatting
+
+**Note**: Not all Groovy files are covered yet. You are very welcome to include more though. Please see (build.gradle)[build.gradle].
+
+```sh
+gradle spotlessApply
+```

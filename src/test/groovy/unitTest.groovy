@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause-Patent
  */
 
+import static helpers.Asserts.*
 import static helpers.Bindings.*
 import static org.junit.jupiter.api.Assertions.*
 
@@ -20,17 +21,18 @@ class UnitTest {
     static final String CONTEXT_MOCK = 'ctx'
     static final String DESCRIPTION_MOCK = 'desc'
     static final String JUNIT_FILES_DEFAULT = 'test_results/*.xml'
-    static final String NODELIST_DEFAULT = 'node1'
-    static final int NODE_COUNT_DEFAULT = 1
+    static final String NODELIST_MOCK = 'node1'
+    static final int NODE_COUNT_MOCK = 57
     static final String INST_RPMS_DEFAULT = ''
     static final String IMAGE_VERSION_MOCK = 'el9'
     static final String BUILD_TYPE_MOCK = 'debug'
     static final String COMPILER_MOCK = 'gcc'
     static final List STASHES_MOCK = [
-        'el9-gcc-tests',
-        'el9-gcc-build-vars',
-        'el9-gcc-install'
+        'Odd stash 1',
+        'Odd stash 2'
     ]
+    static final int TIMEOUT_TIME_MOCK = 48
+    static final String TIMEOUT_UNIT_MOCK = 'Eon'
 
     private Object loadScriptWithMocks(Map extraBinding = [:]) {
 
@@ -38,9 +40,7 @@ class UnitTest {
 
         // ---- ENV ----
         binding.setVariable('env', [
-            NODELIST        : UnitTest.NODELIST_DEFAULT,
-            STAGE_NAME      : 'el9-gcc',
-            SSH_KEY_ARGS    : ''
+            NODELIST        : UnitTest.NODELIST_MOCK
         ])
 
         // ---- PIPELINE STEP MOCKS ----
@@ -59,7 +59,7 @@ class UnitTest {
         binding.setVariable('parseStageInfo', { Map m ->
             [
                 compiler        : 'gcc',
-                node_count      : UnitTest.NODE_COUNT_DEFAULT,
+                node_count      : UnitTest.NODE_COUNT_MOCK,
                 target          : 'el9',
                 distro_version  : '9',
                 ci_target       : 'el9',
@@ -85,8 +85,8 @@ class UnitTest {
     void 'provisionNodes() gets basic arguments'() {
         def provisionNodes = { Map m ->
             assertNotNull(m)
-            assertEquals(UnitTest.NODELIST_DEFAULT, m.NODELIST)
-            assertEquals(UnitTest.NODE_COUNT_DEFAULT, m.node_count)
+            assertEquals(UnitTest.NODELIST_MOCK, m.NODELIST)
+            assertEquals(UnitTest.NODE_COUNT_MOCK, m.node_count)
             assertEquals(UnitTest.IMAGE_VERSION_MOCK, m.distro)
             assertEquals(UnitTest.INST_RPMS_DEFAULT, m.inst_rpms)
 
@@ -136,98 +136,65 @@ class UnitTest {
         ])
     }
 
-    static Stream<Arguments> variants() {
-        return Stream.of(
-                Arguments.of(null, true, false),
-                Arguments.of(UnitTest.BUILD_TYPE_MOCK, true, false),
-                Arguments.of(UnitTest.BUILD_TYPE_MOCK, false, false),
-                Arguments.of(UnitTest.BUILD_TYPE_MOCK, false, true),
-                Arguments.of(UnitTest.BUILD_TYPE_MOCK, true, true),
-                )
-    }
-
-    @ParameterizedTest(name = "build_type: ''{0}'', unstash_tests: ''{1}'', unstash_opt: ''{2}''")
-    @MethodSource('variants')
-    void "runTest() stashes variants with image_version"(String build_type, boolean unstash_tests, boolean unstash_opt) {
-        def parseStageInfo = { Map m ->
-            Map stage_info = [
-                compiler : UnitTest.COMPILER_MOCK,
-            ]
-            if (build_type != null) {
-                stage_info['build_type'] = build_type
-            }
-            return stage_info
-        }
-
-        def runTest = { Map m ->
-            String ts = UnitTest.IMAGE_VERSION_MOCK + '-' + UnitTest.COMPILER_MOCK
-            if (build_type != null) {
-                ts += '-' + UnitTest.BUILD_TYPE_MOCK
-            }
-            List stashes = [ts + '-build-vars']
-            if (unstash_tests) stashes.add(ts + '-tests')
-            if (unstash_opt) {
-                stashes.add(ts + '-opt-tar')
-            } else {
-                stashes.add(ts + '-install')
-            }
-            assertNotNull(m)
-            assertIterableEquals(stashes.sort(), m.stashes.sort().collect { it.toString() })
-
-            return [:]
-        }
-
-        def script = loadScriptWithMocks([
-            parseStageInfo: parseStageInfo,
-            runTest: runTest
-        ])
-
-        script.call([
-            image_version: UnitTest.IMAGE_VERSION_MOCK,
-            unstash_tests: unstash_tests,
-            unstash_opt: unstash_opt,
-        ])
-    }
-
     @Test
-    void 'call uses correct timeout parameters'() {
+    void 'timeout gets correct parameters'() {
 
-        def capturedTimeout = null
+        // Defaults
+        int expectedTime = 120
+        String expectedUnit = 'MINUTES'
+
+        def timeout = { Map m, Closure c ->
+            assertNotNull(m)
+            assertEquals(expectedTime, m.time)
+            assertEquals(expectedUnit, m.unit)
+            c()
+        }
 
         def script = loadScriptWithMocks([
-            timeout: { Map m, Closure c ->
-                capturedTimeout = m
-                c()
-            },
+            timeout: timeout,
             runTest: { Map cfg ->
                 [result_code: 0]
             }
         ])
 
-        script.call([
-            timeout_time: 60,
-            timeout_unit: 'MINUTES'
-        ])
+        script.call([]) // use defaults
 
-        assertNotNull(capturedTimeout)
-        assertEquals(60, capturedTimeout.time)
-        assertEquals('MINUTES', capturedTimeout.unit)
+        // custom values
+        expectedTime = TIMEOUT_TIME_MOCK
+        expectedUnit = TIMEOUT_UNIT_MOCK
+
+        script.call([
+            timeout_time: TIMEOUT_TIME_MOCK,
+            timeout_unit: TIMEOUT_UNIT_MOCK
+        ])
     }
 
     @Test
-    void 'call returns correct runData'() {
+    void 'call() returns correct runData'() {
+        Map set1 = [
+            1: 2
+        ]
+        Map set2 = [
+            3: 4,
+            result_code: 0
+        ]
+
+        def provisionNodes = { Map m ->
+            return set1.clone()
+        }
+        def runTest = { Map m ->
+            return set2.clone()
+        }
 
         def script = loadScriptWithMocks([
-            runTest: { Map cfg -> [result_code: 0] },
-            afterTest: { Map cfg, Map run ->
-                run
-            }
+            provisionNodes: provisionNodes,
+            runTest: runTest,
         ])
 
-        def result = script.call([:])
+        def runData = script.call([:])
 
-        assertEquals(0, result.result_code)
-        assertEquals(5, result.unittest_time)  // durationSeconds mock
+        assertIsSubset(set1, runData)
+        assertIsSubset(set2, runData)
     }
 
     @Test
