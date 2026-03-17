@@ -146,7 +146,7 @@ pipeline {
                 expression { !skipStage() }
             }
             parallel {
-                stage('Gradle Tests') {
+                stage('Junit Tests') {
                     steps {
                         sh './gradlew spotlessCheck test --no-daemon'
                     }
