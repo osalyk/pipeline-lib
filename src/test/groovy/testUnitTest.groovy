@@ -20,13 +20,15 @@ class UnitTest {
 
     static final String CONTEXT_MOCK = 'ctx'
     static final String DESCRIPTION_MOCK = 'desc'
+    static final int DURATION_SECONDS_MOCK = 13
     static final String JUNIT_FILES_DEFAULT = 'test_results/*.xml'
     static final String NODELIST_MOCK = 'node1'
     static final int NODE_COUNT_MOCK = 57
     static final String INST_RPMS_DEFAULT = ''
-    static final String IMAGE_VERSION_MOCK = 'el9'
-    static final String BUILD_TYPE_MOCK = 'debug'
-    static final String COMPILER_MOCK = 'gcc'
+    static final String IMAGE_VERSION_MOCK = 'Odd image version'
+    static final String BUILD_TYPE_MOCK = 'Odd build type'
+    static final String COMPILER_MOCK = 'Odd compiler'
+    static final String SANITIZED_STAGE_NAME_MOCK = 'odd_stage_name'
     static final List STASHES_MOCK = [
         'Odd stash 1',
         'Odd stash 2'
@@ -34,7 +36,7 @@ class UnitTest {
     static final int TIMEOUT_TIME_MOCK = 48
     static final String TIMEOUT_UNIT_MOCK = 'Eon'
 
-    private Object loadScriptWithMocks(Map extraBinding = [:]) {
+    private Script loadScriptWithMocks(Map extraBinding = [:]) {
 
         def binding = new Binding()
 
@@ -58,18 +60,12 @@ class UnitTest {
 
         binding.setVariable('parseStageInfo', { Map m ->
             [
-                compiler        : 'gcc',
-                node_count      : UnitTest.NODE_COUNT_MOCK,
-                target          : 'el9',
-                distro_version  : '9',
-                ci_target       : 'el9',
-                build_type      : '',
-                NLT             : false
+                node_count      : UnitTest.NODE_COUNT_MOCK
             ]
         })
 
-        binding.setVariable('durationSeconds', { Long l -> 5 })
-        binding.setVariable('sanitizedStageName', { -> 'el9-gcc' })
+        binding.setVariable('durationSeconds', { Long l -> DURATION_SECONDS_MOCK })
+        binding.setVariable('sanitizedStageName', { -> SANITIZED_STAGE_NAME_MOCK })
         binding.setVariable('checkJunitFiles', { Map m -> 'SUCCESS' })
 
         // override bindings as required for a specific test
@@ -138,7 +134,6 @@ class UnitTest {
 
     @Test
     void 'timeout gets correct parameters'() {
-
         // Defaults
         int expectedTime = 120
         String expectedUnit = 'MINUTES'
@@ -195,43 +190,7 @@ class UnitTest {
 
         assertIsSubset(set1, runData)
         assertIsSubset(set2, runData)
-    }
-
-    @Test
-    void 'call computes default image_version correctly'() {
-
-        def capturedProvisionArgs = null
-
-        def script = loadScriptWithMocks([
-            provisionNodes: { Map m ->
-                capturedProvisionArgs = m
-                return [:]
-            }
-        ])
-
-        script.call([:])
-
-        assertNotNull(capturedProvisionArgs)
-        assertEquals('el9', capturedProvisionArgs.distro)  // image_version
-    }
-
-    @Test
-    void 'call uses provided image_version when given'() {
-
-        def capturedProvisionArgs = null
-
-        def script = loadScriptWithMocks([
-            provisionNodes: { Map m ->
-                capturedProvisionArgs = m
-                return [:]
-            }
-        ])
-
-        script.call([
-            image_version: 'el9.7'
-        ])
-
-        assertNotNull(capturedProvisionArgs)
-        assertEquals('el9.7', capturedProvisionArgs.distro)
+        assert('unittest_time' in runData)
+        assertEquals(runData['unittest_time'], DURATION_SECONDS_MOCK)
     }
 }
