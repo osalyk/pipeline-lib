@@ -146,6 +146,16 @@ pipeline {
                 expression { !skipStage() }
             }
             parallel {
+                stage('Gradle Tests') {
+                    steps {
+                        sh './gradlew spotlessCheck test --no-daemon'
+                    }
+                    post {
+                        always {
+                            junit 'build/test-results/test/*.xml'
+                        }
+                    }
+                }
                 stage('daosLatestVersion() tests') {
                     steps {
                         script {
@@ -166,17 +176,6 @@ pipeline {
                         distro_version_test('master', 'el9', '9')
                         distro_version_test('master', 'leap15', '15')
                         distro_version_test('master', 'ubuntu20', '20.04')
-                    }
-                }
-                stage('Gradle Tests') {
-                    steps {
-                        sh 'chmod +x ./gradlew'
-                        sh './gradlew test --no-daemon'
-                    }
-                    post {
-                        always {
-                            junit 'build/test-results/test/*.xml'
-                        }
                     }
                 }
                 stage('grep JUnit results tests failure case') {
