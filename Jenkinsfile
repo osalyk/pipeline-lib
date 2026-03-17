@@ -168,6 +168,17 @@ pipeline {
                         distro_version_test('master', 'ubuntu20', '20.04')
                     }
                 }
+                stage('Gradle Tests') {
+                    steps {
+                        sh 'chmod +x ./gradlew'
+                        sh './gradlew test --no-daemon'
+                    }
+                    post {
+                        always {
+                            junit 'build/test-results/test/*.xml'
+                        }
+                    }
+                }
                 stage('grep JUnit results tests failure case') {
                     agent {
                         docker {
